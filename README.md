@@ -36,6 +36,7 @@ Made with ❤️ by [whitedogg13](https://github.com/whitedogg13) and [revteltec
 ```shell
 npm i --save react-native-nfc-manager
 ```
+
 ### iOS
 
 This library use native-modules, so you will need to do `pod install` for iOS:
@@ -43,6 +44,7 @@ This library use native-modules, so you will need to do `pod install` for iOS:
 ```shell
 cd ios && pod install && cd ..
 ```
+
 ### Android
 
 It should be properly auto-linked, so you don't need to do anything.
@@ -55,7 +57,7 @@ It should be properly auto-linked, so you don't need to do anything.
 
 1. In [apple developer site](https://developer.apple.com/), enable capability for NFC
 
-![enable capability](./images/enable-capability.png "enable capability")
+![enable capability](./images/enable-capability.png 'enable capability')
 
 2. in Xcode, add `NFCReaderUsageDescription` into your `info.plist`, for example:
 
@@ -67,6 +69,7 @@ It should be properly auto-linked, so you don't need to do anything.
 More info on Apple's [doc](https://developer.apple.com/documentation/bundleresources/information_property_list/nfcreaderusagedescription?language=objc)
 
 Additionally, if writing ISO7816 tags add application identifiers (aid) into your `info.plist` as needed like this.
+
 ```
 <key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
 <array>
@@ -97,15 +100,15 @@ An incomplete list of aid's can be found here. [Application identifier](https://
 
 3. in Xcode's `Signing & Capabilities` tab, make sure `Near Field Communication Tag Reading` capability had been added, like this:
 
-![xcode-add-capability](./images/xcode-capability.png "xcode capability")
+![xcode-add-capability](./images/xcode-capability.png 'xcode capability')
 
 If this is the first time you toggle the capabilities, the Xcode will generate a `<your-project>.entitlement` file for you:
 
-![xcode-add-entitlement](./images/xcode-entitlement.png "xcode entitlement")
+![xcode-add-entitlement](./images/xcode-entitlement.png 'xcode entitlement')
 
 4. in Xcode, review the generated entitlement. It should look like this:
 
-![edit entitlement](./images/edit-entitlement.png "edit entitlement")
+![edit entitlement](./images/edit-entitlement.png 'edit entitlement')
 
 More info on Apple's [doc](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_developer_nfc_readersession_formats?language=objc)
 
@@ -137,7 +140,6 @@ The reason for this is because Android puts new limitation on [PendingIntent](ht
 > The original issue is [here](https://github.com/revtel/react-native-nfc-manager/issues/469)
 
 If you don't care about **Android 12** for now, you can use **`v3.11.0`** as a short term solution.
-
 
 ## Getting Started
 
@@ -189,7 +191,36 @@ const styles = StyleSheet.create({
 export default App;
 ```
 
+## Opt-in iOS Tag UID Mode (registerTagEventEx)
 
+Use `registerTagEventEx` when you need continuous iOS tag-reader scanning that emits a stable UID (`tag.id`) for ISO14443/ISO15693 tags. The default `registerTagEvent` remains NDEF-based and does not emit `id`; Android aliases the new method to its existing behavior.
+
+```javascript
+import NfcManager from 'react-native-nfc-manager';
+
+async function startUidMode() {
+  await NfcManager.start();
+  await NfcManager.registerTagEventEx({
+    alertMessage: 'Hold near a key tag',
+    pollingOptions: ['iso14443', 'iso15693'],
+  });
+
+  NfcManager.setEventListener(NfcManager.EVENTS.DiscoverTag, (tag) => {
+    // tag.id present for ISO14443/ISO15693; felica uses idm/systemCode
+    console.log('UID event', tag.id, tag.tech);
+  });
+}
+
+async function stopUidMode() {
+  await NfcManager.unregisterTagEvent();
+}
+```
+
+Notes:
+
+- Requires iOS 13+ with NFC entitlement and `NFCReaderUsageDescription` set.
+- `registerTagEvent` behavior is unchanged; use it for default NDEF reads.
+- Android behavior is unchanged; the new API maps to the existing tag event path.
 
 ## DOCUMENTATION
 
@@ -201,19 +232,19 @@ Check the full documentation that contains `examples`, `faq` and other topics li
 
 <a name="nfccompatibility"></a>
 
-|NFC Technologies   | Android | iOS  |
-|---                |---      |---   |
-| `Ndef`            | ✅      | ✅   |
-| `NfcA`            | ✅      | ✅   |
-| `IsoDep`          | ✅      | ✅   |
-| `NfcB`            | ✅      | ❌   |
-| `NfcF`            | ✅      | ❌   |
-| `NfcV`            | ✅      | ❌   |
-| `MifareClassic`   | ✅      | ❌   |
-| `MifareUltralight`| ✅      | ❌   |
-| `MifareIOS`       | ❌      | ✅   |
-| `Iso15693IOS`     | ❌      | ✅   |
-| `FelicaIOS`       | ❌      | ✅   |
+| NFC Technologies   | Android | iOS |
+| ------------------ | ------- | --- |
+| `Ndef`             | ✅      | ✅  |
+| `NfcA`             | ✅      | ✅  |
+| `IsoDep`           | ✅      | ✅  |
+| `NfcB`             | ✅      | ❌  |
+| `NfcF`             | ✅      | ❌  |
+| `NfcV`             | ✅      | ❌  |
+| `MifareClassic`    | ✅      | ❌  |
+| `MifareUltralight` | ✅      | ❌  |
+| `MifareIOS`        | ❌      | ✅  |
+| `Iso15693IOS`      | ❌      | ✅  |
+| `FelicaIOS`        | ❌      | ✅  |
 
 ## Usage concept
 
@@ -222,7 +253,6 @@ Check the full documentation that contains `examples`, `faq` and other topics li
 In higher level, there're 4 steps to use this library:
 
 0. (Recommended but not necessary) Before all next steps, use `NfcManager.start()` to start listen a tag.
-
 
 1. Request your particular NFC technologies through `NfcManager.requestTechnology`. Let's request `Ndef` techonogy.
 
@@ -233,21 +263,20 @@ NfcManager.requestTechnology(NfcTech.Ndef);
 2. Select the proper NFC technology handler, which is implemented as getter in main `NfcManager` object.
 
 ```javascript
-NfcManager.ndefHandler
+NfcManager.ndefHandler;
 ```
 
 3. Call specific methods on the NFC technology handler.
 
 ```javascript
-NfcManager.ndefHandler.getNdefMessage()
+NfcManager.ndefHandler.getNdefMessage();
 ```
 
 4. Clean up your tech registration through:
 
 ```javascript
-NfcManager.cancelTechnologyRequest()
+NfcManager.cancelTechnologyRequest();
 ```
-
 
 ## API
 
@@ -255,20 +284,19 @@ NfcManager.cancelTechnologyRequest()
 
 The following table shows the handler for each technology, so if you need to use a technology, go to [index.d.ts](index.d.ts) and search for it.
 
-|NFC Technologies   | Handlers |
-|---                |---      |
-| `Ndef`            | `NdefHandler` |
-| `NfcA`            | `NfcAHandler` |
-| `IsoDep`          | `IsoDepHandler` |
-| `NfcB`            | - |
-| `NfcF`            | - |
-| `NfcV`            | `NfcVHandler` |
-| `MifareClassic`   | `MifareClassicHandlerAndroid` |
-| `MifareUltralight`| `MifareUltralightHandlerAndroid` |
-| `MifareIOS`       | - |
-| `Iso15693IOS`     | `Iso15693HandlerIOS` |
-| `FelicaIOS`       | - |
-
+| NFC Technologies   | Handlers                         |
+| ------------------ | -------------------------------- |
+| `Ndef`             | `NdefHandler`                    |
+| `NfcA`             | `NfcAHandler`                    |
+| `IsoDep`           | `IsoDepHandler`                  |
+| `NfcB`             | -                                |
+| `NfcF`             | -                                |
+| `NfcV`             | `NfcVHandler`                    |
+| `MifareClassic`    | `MifareClassicHandlerAndroid`    |
+| `MifareUltralight` | `MifareUltralightHandlerAndroid` |
+| `MifareIOS`        | -                                |
+| `Iso15693IOS`      | `Iso15693HandlerIOS`             |
+| `FelicaIOS`        | -                                |
 
 ## App Demo - NfcOpenReWriter
 
@@ -291,6 +319,6 @@ We have a full featured NFC utility app using this library available for downloa
 <a name="learn"></a>
 
 We have published a React Native NFC course with [newline.co](https://www.newline.co/), check it out!
+
 - Free course (1 hour) about basic NFC setup and concept [here](https://www.youtube.com/watch?v=rAS-DvNUFck)
 - Full course (3 hours) for more (NDEF, Deep Linking, NTAG password protection, signature with UID) [here](https://www.newline.co/courses/newline-guide-to-nfcs-with-react-native)
-

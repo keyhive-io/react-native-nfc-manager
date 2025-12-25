@@ -8,6 +8,7 @@
     NSDictionary *nfcTechTypes;
     NSArray *techRequestTypes;
     RCTResponseSenderBlock techRequestCallback;
+    BOOL isTagEventRegistered;
 }
 
 RCT_EXPORT_MODULE()
@@ -77,6 +78,7 @@ continueUserActivity:(NSUserActivity *)userActivity
     tagSession = nil;
     techRequestTypes = nil;
     techRequestCallback = nil;
+    isTagEventRegistered = NO;
 }
 
 - (NSArray<NSString *> *)supportedEvents
@@ -212,6 +214,33 @@ continueUserActivity:(NSUserActivity *)userActivity
                 }
             }
         }
+    } else if (isTagEventRegistered) {
+        id<NFCTag> tag = [tags firstObject];
+
+        [tagSession connectToTag:tag
+                 completionHandler:^(NSError *error) {
+            if (error != nil) {
+                NSLog(@"NFCTag restarting polling");
+                [self->tagSession restartPolling];
+                return;
+            }
+
+            if (self->tagSession.connectedTag == nil) {
+                [self->tagSession restartPolling];
+                return;
+            }
+
+            NSDictionary *rnTag = [self getRNTag:tag];
+            BOOL hasId = [rnTag objectForKey:@"id"] != nil;
+            BOOL hasFelicaId = [rnTag objectForKey:@"idm"] != nil || [rnTag objectForKey:@"systemCode"] != nil;
+            if (!hasId && !hasFelicaId) {
+                [self->tagSession restartPolling];
+                return;
+            }
+
+            [self sendEventWithName:@"NfcManagerDiscoverTag" body:rnTag];
+            [self->tagSession restartPolling];
+        }];
     }
 }
 
@@ -336,6 +365,48 @@ RCT_EXPORT_METHOD(cancelTechnologyRequest:(nonnull RCTResponseSenderBlock)callba
     }
 }
 
+- (NFCPollingOption)parsePollingOptions:(id)options
+    API_AVAILABLE(ios(13.0)) {
+    NFCPollingOption pollFlags = NFCPollingISO14443 | NFCPollingISO15693;
+
+    if (options == nil) {
+        return pollFlags;
+    }
+
+    NSArray *opts = nil;
+    if ([options isKindOfClass:[NSString class]]) {
+        opts = @[options];
+    } else if ([options isKindOfClass:[NSArray class]]) {
+        opts = options;
+    }
+
+    if (opts == nil) {
+        return pollFlags;
+    }
+
+    pollFlags = 0;
+    for (id entry in opts) {
+        if (![entry isKindOfClass:[NSString class]]) {
+            continue;
+        }
+
+        NSString *opt = [(NSString *)entry lowercaseString];
+        if ([opt isEqualToString:@"iso14443"]) {
+            pollFlags |= NFCPollingISO14443;
+        } else if ([opt isEqualToString:@"iso15693"]) {
+            pollFlags |= NFCPollingISO15693;
+        } else if ([opt isEqualToString:@"iso18092"]) {
+            pollFlags |= NFCPollingISO18092;
+        }
+    }
+
+    if (pollFlags == 0) {
+        pollFlags = NFCPollingISO14443 | NFCPollingISO15693;
+    }
+
+    return pollFlags;
+}
+
 RCT_EXPORT_METHOD(registerTagEvent:(NSDictionary *)options callback:(nonnull RCTResponseSenderBlock)callback)
 {
     if (@available(iOS 11.0, *)) {
@@ -353,12 +424,39 @@ RCT_EXPORT_METHOD(registerTagEvent:(NSDictionary *)options callback:(nonnull RCT
     }
 }
 
+RCT_EXPORT_METHOD(registerTagEventEx:(NSDictionary *)options callback:(nonnull RCTResponseSenderBlock)callback)
+{
+    if (@available(iOS 13.0, *)) {
+        if (session == nil && tagSession == nil) {
+            NFCPollingOption pollFlags = [self parsePollingOptions:[options objectForKey:@"pollingOptions"]];
+            tagSession = [[NFCTagReaderSession alloc]
+                          initWithPollingOption:pollFlags delegate:self queue:dispatch_get_main_queue()];
+            NSString *alertMessage = [options objectForKey:@"alertMessage"];
+            if (alertMessage == nil) {
+                alertMessage = @"Please tap NFC tags";
+            }
+            tagSession.alertMessage = alertMessage;
+            isTagEventRegistered = YES;
+            [tagSession beginSession];
+            callback(@[]);
+        } else {
+            callback(@[@"Duplicated registration", [NSNull null]]);
+        }
+    } else {
+        callback(@[@"Not support in this device", [NSNull null]]);
+    }
+}
+
 RCT_EXPORT_METHOD(unregisterTagEvent:(nonnull RCTResponseSenderBlock)callback)
 {
     if (@available(iOS 11.0, *)) {
         if (session != nil) {
             [session invalidateSession];
             session = nil;
+            callback(@[]);
+        } else if (tagSession != nil && isTagEventRegistered) {
+            [tagSession invalidateSession];
+            [self reset];
             callback(@[]);
         } else {
             callback(@[@"Not even registered", [NSNull null]]);
@@ -412,9 +510,14 @@ RCT_EXPORT_METHOD(getTag: (nonnull RCTResponseSenderBlock)callback)
             if (tagSession.connectedTag) {
                 rnTag = [self getRNTag:tagSession.connectedTag].mutableCopy;
                 ndefTag = [self getNDEFTagHandle:tagSession.connectedTag];
+            } else {
+                NSLog(@"getTag called but connectedTag is nil");
+                callback(@[@"No connected tag", [NSNull null]]);
+                return;
             }
         } else {
             callback(@[@"No session available", [NSNull null]]);
+            return;
         }
         
         if (ndefTag) {

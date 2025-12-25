@@ -86,13 +86,26 @@ declare module 'react-native-nfc-manager' {
     readerModeDelay?: number;
   }
 
+  export interface RegisterTagEventExOpts {
+    alertMessage?: string;
+    skipNdefRead?: boolean;
+    pollingOptions?:
+      | 'iso14443'
+      | 'iso15693'
+      | 'iso18092'
+      | Array<'iso14443' | 'iso15693' | 'iso18092'>;
+  }
+
   export interface CancelTechReqOpts {
     throwOnError?: boolean = false;
     delayMsAndroid?: number = 1000;
   }
 
   interface NdefHandler {
-    writeNdefMessage: (bytes: number[] , options?: { reconnectAfterWrite: boolean }) => Promise<void>;
+    writeNdefMessage: (
+      bytes: number[],
+      options?: {reconnectAfterWrite: boolean},
+    ) => Promise<void>;
     getNdefMessage: () => Promise<TagEvent | null>;
     makeReadOnly: () => Promise<void>;
     getNdefStatus: () => Promise<{
@@ -131,9 +144,7 @@ declare module 'react-native-nfc-manager' {
       block: ArrayLike<number>,
       data: number,
     ) => Promise<void>;
-    mifareClassicTransferBlock: (
-      block: ArrayLike<number>,
-    ) => Promise<void>;
+    mifareClassicTransferBlock: (block: ArrayLike<number>) => Promise<void>;
     mifareClassicGetSectorCount: () => Promise<number>;
     mifareClassicAuthenticateA: (
       sector: number,
@@ -154,14 +165,15 @@ declare module 'react-native-nfc-manager' {
   }
 
   interface NdefFormatableHandlerAndroid {
-    formatNdef: (bytes: number[], options?: { readOnly: boolean }) => Promise<void>;
+    formatNdef: (
+      bytes: number[],
+      options?: {readOnly: boolean},
+    ) => Promise<void>;
   }
 
   /** [iOS ONLY] */
   interface Iso15693HandlerIOS {
-    getSystemInfo: (
-      requestFloags: number,
-    ) => Promise<{
+    getSystemInfo: (requestFloags: number) => Promise<{
       dsfid: number;
       afi: number;
       blockSize: number;
@@ -230,6 +242,7 @@ declare module 'react-native-nfc-manager' {
     isSupported(): Promise<boolean>;
     isEnabled(): Promise<boolean>;
     registerTagEvent(options?: RegisterTagEventOpts): Promise<void>;
+    registerTagEventEx(options?: RegisterTagEventExOpts): Promise<void>;
     unregisterTagEvent(): Promise<void>;
     setEventListener(name: NfcEvents, callback: OnNfcEvents | null): void;
     requestTechnology(
@@ -284,7 +297,7 @@ declare module 'react-native-nfc-manager' {
     transceive(bytes: number[]): Promise<number[]>;
     getMaxTransceiveLength(): Promise<number>;
     setTimeout(timeout: number): Promise<void>;
-    getTimeout(): Promise<number|void>;
+    getTimeout(): Promise<number | void>;
     connect: (techs: NfcTech[]) => Promise<void>;
     close: () => Promise<void>;
     mifareClassicHandlerAndroid: MifareClassicHandlerAndroid;
@@ -419,7 +432,7 @@ declare module 'react-native-nfc-manager' {
       firstNdefInvalid: 204;
     };
     parse(errorString: string): number;
-  }
+  };
 
   export namespace NfcError {
     export class NfcErrorBase extends Error {}
