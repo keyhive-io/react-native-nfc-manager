@@ -45,6 +45,11 @@ const DEFAULT_REGISTER_TAG_EVENT_OPTIONS = {
   readerModeDelay: 250,
 };
 
+const DEFAULT_REGISTER_TAG_EVENT_EX_OPTIONS = {
+  alertMessage: 'Please tap NFC tags',
+  pollingOptions: ['iso14443', 'iso15693'],
+};
+
 function NotImpl() {
   throw new Error('not implemented');
 }
@@ -81,6 +86,17 @@ class NfcManagerBase {
     return handleNativeException(callNative('unregisterTagEvent'));
   }
 
+  async registerTagEventEx(options = {}) {
+    const optionsWithDefault = {
+      ...DEFAULT_REGISTER_TAG_EVENT_EX_OPTIONS,
+      ...options,
+    };
+
+    return handleNativeException(
+      callNative('registerTagEventEx', [optionsWithDefault]),
+    );
+  }
+
   async getTag() {
     return handleNativeException(callNative('getTag'));
   }
@@ -109,7 +125,9 @@ class NfcManagerBase {
   getTimeout = DoNothing;
 
   async writeNdefMessage(bytes, options = {}) {
-    return handleNativeException(callNative('writeNdefMessage', [bytes, options]));
+    return handleNativeException(
+      callNative('writeNdefMessage', [bytes, options]),
+    );
   }
 
   async getNdefMessage() {
@@ -197,27 +215,26 @@ class NfcManagerBase {
       this._onDiscoverTag,
     );
 
-    this._subscriptions[NfcEvents.DiscoverBackgroundTag] = NfcManagerEmitter.addListener(
-      NfcEvents.DiscoverBackgroundTag,
-      this._onDiscoverBackgroundTag,
-    );
+    this._subscriptions[NfcEvents.DiscoverBackgroundTag] =
+      NfcManagerEmitter.addListener(
+        NfcEvents.DiscoverBackgroundTag,
+        this._onDiscoverBackgroundTag,
+      );
 
     if (Platform.OS === 'ios') {
-      this._subscriptions[
-        NfcEvents.SessionClosed
-      ] = NfcManagerEmitter.addListener(
-        NfcEvents.SessionClosed,
-        this._onSessionClosedIOS,
-      );
+      this._subscriptions[NfcEvents.SessionClosed] =
+        NfcManagerEmitter.addListener(
+          NfcEvents.SessionClosed,
+          this._onSessionClosedIOS,
+        );
     }
 
     if (Platform.OS === 'android') {
-      this._subscriptions[
-        NfcEvents.StateChanged
-      ] = NfcManagerEmitter.addListener(
-        NfcEvents.StateChanged,
-        this._onStateChangedAndroid,
-      );
+      this._subscriptions[NfcEvents.StateChanged] =
+        NfcManagerEmitter.addListener(
+          NfcEvents.StateChanged,
+          this._onStateChangedAndroid,
+        );
     }
   };
 }
@@ -228,4 +245,5 @@ export {
   NfcManagerBase,
   NdefStatus,
   DEFAULT_REGISTER_TAG_EVENT_OPTIONS,
+  DEFAULT_REGISTER_TAG_EVENT_EX_OPTIONS,
 };

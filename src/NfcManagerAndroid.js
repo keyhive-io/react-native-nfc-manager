@@ -15,7 +15,7 @@ const NfcAdapter = {
   FLAG_READER_NO_PLATFORM_SOUNDS: 0x100,
 };
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class NfcManagerAndroid extends NfcManagerBase {
   constructor() {
@@ -67,6 +67,8 @@ class NfcManagerAndroid extends NfcManagerBase {
   clearBackgroundTag = () =>
     handleNativeException(callNative('clearBackgroundTag'));
 
+  registerTagEventEx = (options = {}) => this.registerTagEvent(options);
+
   // -------------------------------------
   // public only for Android
   // -------------------------------------
@@ -79,7 +81,7 @@ class NfcManagerAndroid extends NfcManagerBase {
 
   setNdefPushMessage = (bytes) => {
     return Promise.reject('this api is deprecated');
-  }
+  };
 
   setTimeout = (timeout) =>
     handleNativeException(callNative('setTimeout', [timeout]));
@@ -123,7 +125,9 @@ class NfcManagerAndroid extends NfcManagerBase {
   // -------------------------------------
   get ndefFormatableHandlerAndroid() {
     if (!this._ndefFormatableHandlerAndroid) {
-      this._ndefFormatableHandlerAndroid = new NdefFormatableHandlerAndroid(this);
+      this._ndefFormatableHandlerAndroid = new NdefFormatableHandlerAndroid(
+        this,
+      );
     }
     return this._ndefFormatableHandlerAndroid;
   }

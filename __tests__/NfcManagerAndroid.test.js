@@ -1,7 +1,7 @@
 jest.mock('../src/NativeNfcManager');
 
 import {Platform} from 'react-native';
-import {NativeNfcManager} from '../src/NativeNfcManager';
+import {NativeNfcManager, callNative} from '../src/NativeNfcManager';
 import * as NfcError from '../src/NfcError';
 
 describe('NfcManager (android)', () => {
@@ -58,6 +58,12 @@ describe('NfcManager (android)', () => {
     // test if the method stub exists and can be called without exception
     await NfcManager.setAlertMessage();
     expect(true).toBe(true);
+  });
+
+  test('API: registerTagEventEx aliases registerTagEvent', () => {
+    NfcManager.registerTagEventEx();
+    const lastCall = callNative.mock.calls[callNative.mock.calls.length - 1];
+    expect(lastCall[0]).toBe('registerTagEvent');
   });
 
   test('NfcError', async () => {

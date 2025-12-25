@@ -4,6 +4,7 @@ import {NativeModules, NativeEventEmitter} from 'react-native';
 const NativeNfcManager = NativeModules.NfcManager;
 const NfcManagerEmitter = new NativeEventEmitter(NativeNfcManager);
 
+// registerTagEventEx options (iOS): alertMessage?, skipNdefRead?, pollingOptions ('iso14443' | 'iso15693' | 'iso18092' | string[]). Android aliases to registerTagEvent.
 function callNative(name, params = []) {
   const nativeMethod = NativeNfcManager[name];
 

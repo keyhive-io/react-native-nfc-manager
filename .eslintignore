@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+coverage/
+android/build/
+android/.gradle/
+ios/Pods/
+index.d.ts

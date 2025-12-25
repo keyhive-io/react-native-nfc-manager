@@ -44,6 +44,7 @@ describe('NfcManager (ios)', () => {
     expect(typeof NfcManager.isSupported).toBe('function');
     expect(typeof NfcManager.setEventListener).toBe('function');
     expect(typeof NfcManager.registerTagEvent).toBe('function');
+    expect(typeof NfcManager.registerTagEventEx).toBe('function');
     expect(typeof NfcManager.unregisterTagEvent).toBe('function');
     expect(typeof NfcManager.getTag).toBe('function');
     expect(typeof NfcManager.requestTechnology).toBe('function');
@@ -97,6 +98,36 @@ describe('NfcManager (ios)', () => {
     // check if we pass the default options into native
     expect(options.alertMessage).toEqual('Please tap NFC tags');
     expect(options.invalidateAfterFirstRead).toBe(false);
+  });
+
+  test('default DiscoverTag payload does not add id', () => {
+    const tag = {ndefMessage: []};
+    let received = null;
+    NfcManager.setEventListener(NfcEvents.DiscoverTag, (t) => {
+      received = t;
+    });
+    NfcManagerEmitter._testTriggerCallback(NfcEvents.DiscoverTag, tag);
+    expect(received).toEqual(tag);
+    expect('id' in received).toBe(false);
+  });
+
+  test('API: registerTagEventEx', () => {
+    NfcManager.registerTagEventEx();
+    expect(lastNativeCall()[0]).toEqual('registerTagEventEx');
+    const options = lastNativeCall()[1][0];
+    expect(options.alertMessage).toEqual('Please tap NFC tags');
+    expect(options.pollingOptions).toEqual(['iso14443', 'iso15693']);
+  });
+
+  test('DiscoverTag emits id payload unchanged in opt-in mode', () => {
+    const tag = {id: '04A46072AC6D80', tech: 'mifare'};
+    let received = null;
+    NfcManager.setEventListener(NfcEvents.DiscoverTag, (t) => {
+      received = t;
+    });
+    NfcManagerEmitter._testTriggerCallback(NfcEvents.DiscoverTag, tag);
+    expect(received).toEqual(tag);
+    expect(received.id).toBe('04A46072AC6D80');
   });
 
   test('API: cancelTechnologyRequest', async () => {

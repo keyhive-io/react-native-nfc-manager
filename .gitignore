@@ -1,4 +1,5 @@
 .idea
+.vscode/
 android/local.properties
 gen/
 
@@ -8,6 +9,8 @@ gradlew
 gradlew.bat
 
 node_modules
+dist/
+coverage/
 
 # OSX
 #
@@ -30,10 +33,11 @@ xcuserdata
 *.iml
 
 npm-debug.log
+yarn-debug.log
+yarn-error.log
+*.log
 
 reference
-
-yarn-error.log
 
 # Vim 
 .ctags
@@ -41,3 +45,4 @@ tags
 
 # dotenv
 .env
+.env.*
