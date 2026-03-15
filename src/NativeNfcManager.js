@@ -1,7 +1,21 @@
 'use strict';
 import {NativeModules, NativeEventEmitter} from 'react-native';
 
-const NativeNfcManager = NativeModules.NfcManager;
+const isTurboModuleEnabled = global.__turboModuleProxy != null;
+
+let NativeNfcManager = NativeModules.NfcManager;
+
+if (isTurboModuleEnabled) {
+  try {
+    const TurboNativeNfcManager = require('../specs/NativeNfcManager').default;
+    if (TurboNativeNfcManager) {
+      NativeNfcManager = TurboNativeNfcManager;
+    }
+  } catch (_) {
+    // Keep using NativeModules fallback when specs are not generated.
+  }
+}
+
 const NfcManagerEmitter = new NativeEventEmitter(NativeNfcManager);
 
 // registerTagEventEx options (iOS): alertMessage?, skipNdefRead?, pollingOptions ('iso14443' | 'iso15693' | 'iso18092' | string[]). Android aliases to registerTagEvent.

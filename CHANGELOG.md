@@ -4,6 +4,10 @@
 
 - Opt-in `registerTagEventEx` API: iOS uses `NFCTagReaderSession` to emit `tag.id` for ISO14443/ISO15693 while preserving default `registerTagEvent` NDEF behavior; Android maps the new API to existing registerTagEvent.
 
+### Fixed
+
+- Added TurboModule-safe fallback resolution in `src/NativeNfcManager.js`: default to `NativeModules.NfcManager`, attempt `../specs/NativeNfcManager` only when Turbo runtime is enabled, and gracefully fall back when the specs module is unavailable.
+
 ## [3.0.2](https://github.com/whitedogg13/react-native-nfc-manager/compare/v3.0.1...v3.0.2) (2021-02-22)
 
 ### Features
